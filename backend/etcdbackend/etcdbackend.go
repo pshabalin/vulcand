@@ -5,8 +5,10 @@ package etcdbackend
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/mailgun/vulcand/Godeps/_workspace/src/github.com/mailgun/go-etcd/etcd"
 	"github.com/mailgun/vulcand/Godeps/_workspace/src/github.com/mailgun/log"
@@ -65,10 +67,27 @@ func (s *EtcdBackend) Close() {
 func (s *EtcdBackend) reconnect() error {
 	s.Close()
 	client := etcd.NewClient(s.nodes)
+	client.CheckRetry = ExponentialBackoffRetry
 	if err := client.SetConsistency(s.options.EtcdConsistency); err != nil {
 		return err
 	}
 	s.client = client
+	return nil
+}
+
+// Defines the retrying behaviour for bad HTTP requests
+func ExponentialBackoffRetry(cluster *etcd.Cluster, numReqs int, lastResp http.Response, err error) error {
+	if numReqs >= 9*len(cluster.Machines) {
+		return &etcd.EtcdError{
+			ErrorCode: etcd.ErrCodeEtcdNotReachable,
+			Message:   "",
+			Cause:     "Retry exponential back off retry 9 times",
+			Index:     0,
+		}
+	}
+
+	sleepTime := 100 * numReqs
+	time.Sleep(time.Millisecond * time.Duration(sleepTime))
 	return nil
 }
 
