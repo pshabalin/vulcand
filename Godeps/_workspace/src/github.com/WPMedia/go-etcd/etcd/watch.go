@@ -33,8 +33,9 @@ func (c *Client) Watch(prefix string, waitIndex uint64, recursive bool,
 		}
 
 		resp, err := raw.Unmarshal()
+
 		if err != nil {
-			return nil, fmt.Errorf("%v, %+v", err, &raw)
+			return nil, fmt.Errorf("%v, raw: %+v", err, raw)
 		}
 
 		return resp, nil
@@ -51,7 +52,7 @@ func (c *Client) Watch(prefix string, waitIndex uint64, recursive bool,
 		resp, err := raw.Unmarshal()
 
 		if err != nil {
-			return nil, fmt.Errorf("%v, %+v", err, &raw)
+			return nil, fmt.Errorf("%v, raw: %+v", err, raw)
 		}
 
 		waitIndex = resp.Node.ModifiedIndex + 1
