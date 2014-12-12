@@ -2,6 +2,7 @@ package etcd
 
 import (
 	"errors"
+	"fmt"
 )
 
 // Errors introduced by the Watch command.
@@ -45,7 +46,7 @@ func (c *Client) Watch(prefix string, waitIndex uint64, recursive bool,
 		resp, err := raw.Unmarshal()
 
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%v, %+v", err, &raw)
 		}
 
 		waitIndex = resp.Node.ModifiedIndex + 1
