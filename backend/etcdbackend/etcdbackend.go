@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mailgun/vulcand/Godeps/_workspace/src/github.com/mailgun/go-etcd/etcd"
+	"github.com/WPMedia/vulcand/Godeps/_workspace/src/github.com/WPMedia/go-etcd/etcd"
 	"github.com/mailgun/vulcand/Godeps/_workspace/src/github.com/mailgun/log"
 
 	"github.com/mailgun/vulcand/Godeps/_workspace/src/github.com/mailgun/vulcan/endpoint"

@@ -41,11 +41,11 @@
 			"ImportPath": "github.com/gorilla/mux",
 			"Rev": "e718e932ee606838744df844eb75064959eb74bc"
 		},
-		{
-			"ImportPath": "github.com/mailgun/go-etcd/etcd",
-			"Comment": "v0.2.0-rc1-124-g248e96a",
-			"Rev": "248e96a4ad7adfa23b531eb2d8e80d9050c33d24"
-		},
+    {
+      "ImportPath": "github.com/WPMedia/go-etcd/etcd",
+      "Comment": "v0.2.0-rc1-127-g6fe04d5",
+      "Rev": "248e96a4ad7adfa23b531eb2d8e80d9050c33d24"
+    },
 		{
 			"ImportPath": "github.com/mailgun/log",
 			"Rev": "5dc398f9fd1471fbdfa776258249cee93f3c6296"
