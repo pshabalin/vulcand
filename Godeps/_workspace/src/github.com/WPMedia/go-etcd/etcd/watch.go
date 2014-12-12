@@ -32,7 +32,12 @@ func (c *Client) Watch(prefix string, waitIndex uint64, recursive bool,
 			return nil, err
 		}
 
-		return raw.Unmarshal()
+		resp, err := raw.Unmarshal()
+		if err != nil {
+			return nil, fmt.Errorf("%v, %+v", err, &raw)
+		}
+
+		return resp, nil
 	}
 	defer close(receiver)
 
