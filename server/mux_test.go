@@ -314,11 +314,11 @@ func (s *ServerSuite) TestTrieRoutes(c *C) {
 	c.Assert(s.mux.Start(), IsNil)
 
 	l1, h1 := MakeLocation(LocOpts{Hostname: "localhost", Addr: "localhost:31000", URL: e1.URL})
-	l1.Path = `TrieRoute("/loc/path1")`
+	l1.Path = `Path("/loc/path1")`
 	l1.Id = "loc1"
 
 	l2, h2 := MakeLocation(LocOpts{Hostname: "localhost", Addr: "localhost:31000", URL: e2.URL})
-	l2.Path = `TrieRoute("/loc/path2")`
+	l2.Path = `Path("/loc/path2")`
 	l2.Id = "loc2"
 
 	c.Assert(s.mux.UpsertLocation(h1, l1), IsNil)
@@ -532,9 +532,9 @@ func (s *ServerSuite) TestUpdateRateLimit(c *C) {
 	// Make sure connection limit and rate limit are here as well
 	chain := loc.GetMiddlewareChain()
 	limiter := chain.Get("ratelimit.rl1").(*tokenbucket.TokenLimiter)
-	c.Assert(limiter.GetRate().Units, Equals, int64(100))
-	c.Assert(limiter.GetRate().Period, Equals, time.Second*time.Duration(10))
-	c.Assert(limiter.GetBurst(), Equals, int64(200))
+	rs1 := tokenbucket.NewRateSet()
+	rs1.Add(10*time.Second, 100, 200)
+	c.Assert(limiter.DefaultRates(), DeepEquals, rs1)
 
 	// Update the rate limit
 	rl = MakeRateLimit("rl1", 12, "client.ip", 20, 3, l)
@@ -542,9 +542,9 @@ func (s *ServerSuite) TestUpdateRateLimit(c *C) {
 
 	// Make sure the changes have taken place
 	limiter = chain.Get("ratelimit.rl1").(*tokenbucket.TokenLimiter)
-	c.Assert(limiter.GetRate().Units, Equals, int64(12))
-	c.Assert(limiter.GetRate().Period, Equals, time.Second*time.Duration(3))
-	c.Assert(limiter.GetBurst(), Equals, int64(20))
+	rs2 := tokenbucket.NewRateSet()
+	rs2.Add(3*time.Second, 12, 20)
+	c.Assert(limiter.DefaultRates(), DeepEquals, rs2)
 }
 
 func (s *ServerSuite) TestRateLimitCRUD(c *C) {
@@ -583,7 +583,7 @@ func (s *ServerSuite) TestUpdateLocationPath(c *C) {
 
 	c.Assert(GETResponse(c, MakeURL(l, h.Listeners[0]), Opts{}), Equals, "Hi, I'm endpoint")
 
-	l.Path = `TrieRoute("/hello/path2")`
+	l.Path = `Path("/hello/path2")`
 
 	c.Assert(s.mux.UpdateLocationPath(h, l, l.Path), IsNil)
 
@@ -728,12 +728,6 @@ func (s *ServerSuite) TestSwitchUpstreams(c *C) {
 
 	// Upstream can now be deleted
 	c.Assert(s.mux.DeleteUpstream(up.Id), IsNil)
-}
-
-func (s *ServerSuite) TestConvertPath(c *C) {
-	c.Assert(convertPath(`TrieRoute("hello")`), Equals, `TrieRoute("hello")`)
-	c.Assert(convertPath(`RegexpRoute("hello")`), Equals, `RegexpRoute("hello")`)
-	c.Assert(convertPath(`/hello`), Equals, `RegexpRoute("/hello")`)
 }
 
 func (s *ServerSuite) TestFilesNoFiles(c *C) {
