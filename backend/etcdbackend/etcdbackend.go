@@ -584,8 +584,6 @@ func (s *EtcdBackend) WatchChanges(changes chan interface{}, cancelC chan bool) 
 		response, err := s.client.Watch(s.etcdKey, waitIndex, true, nil, cancelC)
 		if err != nil {
 			switch err {
-			case etcd.ErrWatchTimeout:
-				continue
 			case etcd.ErrWatchStoppedByUser:
 				log.Infof("Stop watching: graceful shutdown")
 				return nil
