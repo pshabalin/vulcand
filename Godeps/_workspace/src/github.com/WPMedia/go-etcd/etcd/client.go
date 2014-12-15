@@ -20,8 +20,10 @@ const (
 	// Using strings rather than iota because the consistency level
 	// could be persisted to disk, so it'd be better to use
 	// human-readable values.
-	STRONG_CONSISTENCY = "STRONG"
-	WEAK_CONSISTENCY   = "WEAK"
+	STRONG_CONSISTENCY      = "STRONG"
+	WEAK_CONSISTENCY        = "WEAK"
+	DEFAULT_DIAL_TIMEOUT    = time.Second
+	DEFAULT_REQUEST_TIMEOUT = time.Minute * 5
 )
 
 const (
@@ -29,11 +31,12 @@ const (
 )
 
 type Config struct {
-	CertFile    string        `json:"certFile"`
-	KeyFile     string        `json:"keyFile"`
-	CaCertFile  []string      `json:"caCertFiles"`
-	DialTimeout time.Duration `json:"timeout"`
-	Consistency string        `json:"consistency"`
+	CertFile       string        `json:"certFile"`
+	KeyFile        string        `json:"keyFile"`
+	CaCertFile     []string      `json:"caCertFiles"`
+	DialTimeout    time.Duration `json:"timeout"`
+	RequestTimeout time.Duration `json:"requestTimeout"`
+	Consistency    string        `json:"consistency"`
 }
 
 type Client struct {
@@ -61,9 +64,15 @@ type Client struct {
 // NewClient create a basic client that is configured to be used
 // with the given machine list.
 func NewClient(machines []string) *Client {
+	return NewClientWithTimeouts(machines, DEFAULT_DIAL_TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
+}
+
+func NewClientWithTimeouts(machines []string, dialTimeout, requestTimeout time.Duration) *Client {
 	config := Config{
 		// default timeout is one second
-		DialTimeout: time.Second,
+		DialTimeout: dialTimeout,
+		// default request timeout is five minutes
+		RequestTimeout: requestTimeout,
 		// default consistency level is STRONG
 		Consistency: STRONG_CONSISTENCY,
 	}
@@ -81,14 +90,18 @@ func NewClient(machines []string) *Client {
 
 // NewTLSClient create a basic client with TLS configuration
 func NewTLSClient(machines []string, cert, key, caCert string) (*Client, error) {
+	return NewTLSClientWithTimeouts(machines, cert, key, caCert, DEFAULT_DIAL_TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
+}
+
+func NewTLSClientWithTimeouts(machines []string, cert, key, caCert string, dialTimeout, requestTimeout time.Duration) (*Client, error) {
 	// overwrite the default machine to use https
 	if len(machines) == 0 {
 		machines = []string{"https://127.0.0.1:4001"}
 	}
 
 	config := Config{
-		// default timeout is one second
-		DialTimeout: time.Second,
+		DialTimeout:    dialTimeout,
+		RequestTimeout: requestTimeout,
 		// default consistency level is STRONG
 		Consistency: STRONG_CONSISTENCY,
 		CertFile:    cert,
@@ -144,6 +157,15 @@ func NewClientFromReader(reader io.Reader) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if c.config.DialTimeout == 0 {
+		c.config.DialTimeout = DEFAULT_DIAL_TIMEOUT
+	}
+
+	if c.config.RequestTimeout == 0 {
+		c.config.RequestTimeout = DEFAULT_REQUEST_TIMEOUT
+	}
+
 	if c.config.CertFile == "" {
 		c.initHTTPClient()
 	} else {
@@ -182,7 +204,7 @@ func (c *Client) initHTTPClient() {
 			InsecureSkipVerify: true,
 		},
 	}
-	c.httpClient = &http.Client{Transport: tr}
+	c.httpClient = &http.Client{Transport: tr, Timeout: c.config.RequestTimeout}
 }
 
 // initHTTPClient initializes a HTTPS client for etcd client
@@ -206,7 +228,7 @@ func (c *Client) initHTTPSClient(cert, key string) error {
 		Dial:            c.dial,
 	}
 
-	c.httpClient = &http.Client{Transport: tr}
+	c.httpClient = &http.Client{Transport: tr, Timeout: c.config.RequestTimeout}
 	return nil
 }
 
