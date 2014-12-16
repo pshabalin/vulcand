@@ -23,7 +23,7 @@ const (
 	STRONG_CONSISTENCY      = "STRONG"
 	WEAK_CONSISTENCY        = "WEAK"
 	DEFAULT_DIAL_TIMEOUT    = time.Second
-	DEFAULT_REQUEST_TIMEOUT = time.Minute * 5
+	DEFAULT_REQUEST_TIMEOUT = 0
 )
 
 const (
