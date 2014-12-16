@@ -107,6 +107,10 @@ func (c *Client) watchOnce(key string, waitIndex uint64, recursive bool, stop ch
 		return nil, ErrWatchStoppedByUser
 	}
 
+	if err != nil {
+		return nil, err
+	}
+
 	if len(resp.Body) == 0 {
 		return nil, ErrWatchTimeout
 	}
