@@ -97,15 +97,6 @@ func TestWatchAll(t *testing.T) {
 	}
 }
 
-func TestWatchTimeout(t *testing.T) {
-	c := NewClientWithTimeouts(nil, DEFAULT_DIAL_TIMEOUT, time.Second)
-
-	_, err := c.Watch("watch_timeout", 0, false, nil, nil)
-	if err != ErrRequestTimeout {
-		t.Fatal("Watch returned a non-timeout error", err)
-	}
-}
-
 func setHelper(key, value string, c *Client) {
 	time.Sleep(time.Second)
 	c.Set(key, value, 100)

@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
-	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -18,7 +17,6 @@ import (
 // Errors introduced by handling requests
 var (
 	ErrRequestCancelled = errors.New("sending request is cancelled")
-	ErrRequestTimeout   = errors.New("request timeout")
 )
 
 type RawRequest struct {
@@ -319,7 +317,8 @@ func (c *Client) SendRequest(rr *RawRequest) (*RawResponse, error) {
 			continue
 		}
 
-		if checkErr := checkRetry(c.cluster, numReqs, *resp, err); checkErr != nil {
+		if checkErr := checkRetry(c.cluster, numReqs, *resp,
+			errors.New("Unexpected HTTP status code")); checkErr != nil {
 			return nil, checkErr
 		}
 		resp.Body.Close()
@@ -341,12 +340,8 @@ func DefaultCheckRetry(cluster *Cluster, numReqs int, lastResp http.Response,
 	err error) error {
 
 	if numReqs >= 2*len(cluster.Machines) {
-		if _, ok := err.(*net.OpError); ok {
-			return ErrRequestTimeout
-		} else {
-			return newError(ErrCodeEtcdNotReachable,
-				"Tried to connect to each peer twice and failed", 0)
-		}
+		return newError(ErrCodeEtcdNotReachable,
+			"Tried to connect to each peer twice and failed", 0)
 	}
 
 	code := lastResp.StatusCode
