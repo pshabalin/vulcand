@@ -8,6 +8,7 @@ import (
 // Errors introduced by the Watch command.
 var (
 	ErrWatchStoppedByUser = errors.New("Watch stopped by the user via stop channel")
+	ErrWatchTimeout       = errors.New("Watch timeout")
 )
 
 // If recursive is set to true the watch returns the first change under the given
@@ -104,6 +105,10 @@ func (c *Client) watchOnce(key string, waitIndex uint64, recursive bool, stop ch
 
 	if err == ErrRequestCancelled {
 		return nil, ErrWatchStoppedByUser
+	}
+
+	if len(resp.Body) == 0 {
+		return nil, ErrWatchTimeout
 	}
 
 	return resp, err
