@@ -21,7 +21,7 @@ Features
 Project info
 ------------
 
-| documentation | https://www.vulcanproxy.com                                      |
+| documentation | https://docs.vulcand.io                                      |
 | :------------- |:-----------------------------------------------------------------|
 | status        | Used in production@Mailgun on moderate workloads.  Under active development.              |
 | blog          | http://blog.vulcanproxy.com                                     |
