@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/WPMedia/vulcand/Godeps/_workspace/src/github.com/WPMedia/go-etcd/etcd"
+	"github.com/mailgun/vulcand/Godeps/_workspace/src/github.com/WPMedia/go-etcd/etcd"
 	"github.com/mailgun/vulcand/Godeps/_workspace/src/github.com/mailgun/log"
 	"github.com/mailgun/vulcand/engine"
 	"github.com/mailgun/vulcand/plugin"
@@ -58,7 +58,7 @@ func (n *ng) reconnect() error {
 	n.Close()
 	client := etcd.NewClient(n.nodes)
 	client.CheckRetry = ExponentialBackoffRetry
-	if err := client.SetConsistency(s.options.EtcdConsistency); err != nil {
+	if err := client.SetConsistency(n.options.EtcdConsistency); err != nil {
 		return err
 	}
 	n.client = client
