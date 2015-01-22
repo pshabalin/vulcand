@@ -5,11 +5,12 @@ package etcdng
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/mailgun/vulcand/Godeps/_workspace/src/github.com/mailgun/go-etcd/etcd"
+	"github.com/WPMedia/vulcand/Godeps/_workspace/src/github.com/WPMedia/go-etcd/etcd"
 	"github.com/mailgun/vulcand/Godeps/_workspace/src/github.com/mailgun/log"
 	"github.com/mailgun/vulcand/engine"
 	"github.com/mailgun/vulcand/plugin"
@@ -56,10 +57,27 @@ func (s *ng) Close() {
 func (n *ng) reconnect() error {
 	n.Close()
 	client := etcd.NewClient(n.nodes)
-	if err := client.SetConsistency(n.options.EtcdConsistency); err != nil {
+	client.CheckRetry = ExponentialBackoffRetry
+	if err := client.SetConsistency(s.options.EtcdConsistency); err != nil {
 		return err
 	}
 	n.client = client
+	return nil
+}
+
+// Defines the retrying behaviour for bad HTTP requests
+func ExponentialBackoffRetry(cluster *etcd.Cluster, numReqs int, lastResp http.Response, err error) error {
+	if numReqs >= 9*len(cluster.Machines) {
+		return &etcd.EtcdError{
+			ErrorCode: etcd.ErrCodeEtcdNotReachable,
+			Message:   "",
+			Cause:     "Retry exponential back off retry 9 times",
+			Index:     0,
+		}
+	}
+
+	sleepTime := 100 * numReqs
+	time.Sleep(time.Millisecond * time.Duration(sleepTime))
 	return nil
 }
 
@@ -410,6 +428,8 @@ func (n *ng) Subscribe(changes chan interface{}, cancelC chan bool) error {
 		response, err := n.client.Watch(n.etcdKey, waitIndex, true, nil, cancelC)
 		if err != nil {
 			switch err {
+			case etcd.ErrWatchTimeout:
+				continue
 			case etcd.ErrWatchStoppedByUser:
 				log.Infof("Stop watching: graceful shutdown")
 				return nil
