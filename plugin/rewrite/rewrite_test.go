@@ -229,6 +229,46 @@ func (s *RewriteSuite) TestUnknownVar(c *C) {
 	c.Assert(re.StatusCode, Equals, http.StatusInternalServerError)
 }
 
+func (s *RewriteSuite) TestRewritePreserveQuery(c *C) {
+	var outURL string
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		outURL = rawURL(req)
+		w.Write([]byte("hello"))
+	})
+
+	rh, err := newRewriteHandler(handler, &Rewrite{"^http://localhost/foo(.*)", "http://localhost$1", false, false})
+	c.Assert(rh, NotNil)
+	c.Assert(err, IsNil)
+
+	srv := httptest.NewServer(rh)
+	defer srv.Close()
+
+	re, _, err := testutils.Get(srv.URL+"/foo/bar?a=b", testutils.Host("localhost"))
+	c.Assert(err, IsNil)
+	c.Assert(re.StatusCode, Equals, http.StatusOK)
+	c.Assert(outURL, Equals, "http://localhost/bar?a=b")
+}
+
+func (s *RewriteSuite) TestRewriteInQuery(c *C) {
+	var outURL string
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		outURL = rawURL(req)
+		w.Write([]byte("hello"))
+	})
+
+	rh, err := newRewriteHandler(handler, &Rewrite{"^http://localhost/foo\\?(.*)=(.*)", `http://localhost/foo?$1={{.Request.Header.Get "X-Header"}}`, false, false})
+	c.Assert(rh, NotNil)
+	c.Assert(err, IsNil)
+
+	srv := httptest.NewServer(rh)
+	defer srv.Close()
+
+	re, _, err := testutils.Get(srv.URL+"/foo?a=b", testutils.Host("localhost"), testutils.Header("X-Header", "xxx"))
+	c.Assert(err, IsNil)
+	c.Assert(re.StatusCode, Equals, http.StatusOK)
+	c.Assert(outURL, Equals, "http://localhost/foo?a=xxx")
+}
+
 // What real-world scenario does this test?
 func (s *RewriteSuite) TestRewriteScheme(c *C) {
 	var outURL *url.URL
@@ -309,4 +349,26 @@ func (s *RewriteSuite) TestDontRewriteResponseBody(c *C) {
 
 	c.Assert(re.StatusCode, Equals, http.StatusOK)
 	c.Assert(string(body), Equals, `{"foo": "{{.Request.Header.Get "X-Header"}}"}`)
+}
+
+// TestContentLength makes sure Content-Length is re-calculated if body rewrite is enabled.
+func (s *RewriteSuite) TestContentLength(c *C) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Length", "45")
+		w.WriteHeader(200)
+		w.Write([]byte(`{"foo": "{{.Request.Header.Get "X-Header"}}"}`))
+	})
+
+	rh, err := newRewriteHandler(handler, &Rewrite{"", "", true, false})
+	c.Assert(rh, NotNil)
+	c.Assert(err, IsNil)
+
+	srv := httptest.NewServer(rh)
+	defer srv.Close()
+
+	re, _, _ := testutils.Get(srv.URL,
+		testutils.Host("localhost"),
+		testutils.Header("X-Header", "bar"))
+
+	c.Assert(re.Header.Get("Content-Length"), Equals, "14")
 }
