@@ -26,11 +26,11 @@
 			"ImportPath": "github.com/gorilla/mux",
 			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
 		},
-    {
-      "ImportPath": "github.com/WPMedia/go-etcd/etcd",
-      "Comment": "v0.2.0-rc1-127-g6fe04d5",
-      "Rev": "248e96a4ad7adfa23b531eb2d8e80d9050c33d24"
-    },
+	  	{
+			"ImportPath": "github.com/coreos/go-etcd/etcd",
+			"Comment": "etcd-2.0",
+			"Rev": "73a8ef737e8ea002281a28b4cb92a1de121ad4c6"
+	    },
 		{
 			"ImportPath": "github.com/mailgun/iptools",
 			"Rev": "fac48f4f8a866e6fd74ecd4cc74f01fe36e6ef9c"
